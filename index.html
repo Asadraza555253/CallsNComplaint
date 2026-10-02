@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Care Connect – Daily Report Builder</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f3f5fb;--card:rgba(255,255,255,.8);--tx:#172033;--mu:#6b7690;--bd:#d9dfec;--hd:#3b3fd8;--hdt:#fff;--ac:#5b5ff0;--ok:#0f9d58;--er:#d92d20;--alt:#eef1fb;--b0:#a9b4cf;--c0:#f59e0b;--c1:#3b82f6;--c2:#a855f7;--c3:#10b981}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1017;--card:rgba(26,32,45,.8);--tx:#e8ebf3;--mu:#98a2b8;--bd:#2c3547;--hd:#3a3fb5;--alt:#1f2636;--b0:#4b5671;--ok:#4ade80;--er:#f97066}}
+:root[data-theme="dark"]{--bg:#0d1017;--card:rgba(26,32,45,.8);--tx:#e8ebf3;--mu:#98a2b8;--bd:#2c3547;--hd:#3a3fb5;--alt:#1f2636;--b0:#4b5671;--ok:#4ade80;--er:#f97066}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.5 system-ui,Segoe UI,Arial,sans-serif;overflow-x:hidden}
+.blob{position:fixed;width:46vw;height:46vw;border-radius:50%;filter:blur(90px);opacity:.28;z-index:-1;animation:fl 18s ease-in-out infinite alternate}
+.b1{background:#6366f1;top:-12vw;left:-10vw}.b2{background:#06b6d4;bottom:-14vw;right:-10vw;animation-delay:-7s}
+@keyframes fl{to{transform:translate(8vw,6vw) scale(1.2)}}
+main{max-width:1250px;margin:auto;padding:18px}
+.hero{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:16px;animation:dn .7s both}
+h1{font-size:30px;margin:0;background:linear-gradient(90deg,#6366f1,#06b6d4,#8b5cf6,#6366f1);background-size:300%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:sh 6s linear infinite}
+@keyframes sh{to{background-position:300%}}@keyframes dn{from{opacity:0;transform:translateY(-14px)}}
+h2{font-size:15px;margin:0 0 10px}.hero p{margin:2px 0 0;color:var(--mu)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.pill{background:var(--card);border:1px solid var(--bd);border-radius:99px;padding:5px 12px;font-size:12px;color:var(--mu)}
+.pill:before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);margin-right:7px;animation:pu 1.6s infinite}
+@keyframes pu{50%{box-shadow:0 0 0 6px transparent;opacity:.5}}
+.card,.kc{background:var(--card);backdrop-filter:blur(10px);border:1px solid var(--bd);border-radius:16px;padding:16px;margin-bottom:16px;transition:transform .25s,box-shadow .25s}
+.card:hover,.kc:hover{transform:translateY(-3px);box-shadow:0 14px 34px rgba(60,70,200,.14)}
+.kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:16px}
+.kc{margin:0;position:relative;overflow:hidden;animation:up .6s calc(var(--i)*90ms) both}
+.kc span{position:absolute;right:12px;top:8px;font-size:26px;animation:bob 3s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-5px)}}
+.kc small{display:block;color:var(--mu)}.kc b{display:block;font-size:30px;line-height:1.2;margin:2px 0}.kc em{font-style:normal;font-size:12px;color:var(--mu)}
+@keyframes up{from{opacity:0;transform:translateY(24px) scale(.96)}}
+.rv{opacity:0;transform:translateY(24px);transition:opacity .7s,transform .7s}.rv.in{opacity:1;transform:none}
+#dz{text-align:center;border:2px dashed var(--ac);cursor:pointer;padding:26px}
+#dz.hot{background:var(--alt);transform:scale(1.015);border-style:solid}
+.dzi{font-size:34px;animation:bob 2s ease-in-out infinite}#dz b{display:block;font-size:17px}
+.slots{justify-content:center;margin-top:12px}.slot{border:1px solid var(--bd);border-radius:99px;padding:4px 14px;font-size:12px;color:var(--mu);transition:.3s}
+.slot.on{background:var(--ok);color:#fff;border-color:var(--ok);transform:scale(1.06)}
+button{background:linear-gradient(135deg,#5b5ff0,#8b5cf6);color:#fff;border:0;border-radius:10px;padding:9px 16px;font-size:14px;cursor:pointer;transition:transform .15s,box-shadow .2s}
+button:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 20px rgba(91,95,240,.4)}button:active{transform:scale(.96)}
+button.s{background:transparent;color:var(--ac);border:1px solid var(--bd)}button:disabled{opacity:.4;cursor:default}
+.mu{color:var(--mu)}.ok{color:var(--ok)}.er{color:var(--er)}
+.pv{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin:12px 0}
+.pv div{background:var(--alt);border-radius:10px;padding:8px;animation:up .4s calc(var(--i)*45ms) both}.pv b{display:block;font-size:18px}
+.g2{display:grid;grid-template-columns:2fr 1fr;gap:16px}@media(max-width:800px){.g2{grid-template-columns:1fr}}
+svg{width:100%;height:auto;display:block}.gl{stroke:var(--bd);stroke-dasharray:3}.ax{fill:var(--mu);font-size:10px}
+.bar{transform-box:fill-box;transform-origin:bottom;animation:gr .9s var(--d) both cubic-bezier(.2,.8,.2,1);transition:filter .2s}
+.bar:hover,.seg:hover{filter:brightness(1.25)}.y0{fill:var(--b0)}.y1{fill:var(--ac)}@keyframes gr{from{transform:scaleY(0)}}
+.seg{animation:sg 1s var(--d) both;transition:stroke-width .2s}.seg:hover{stroke-width:28}@keyframes sg{from{stroke-dasharray:0 377}}
+.lg{display:flex;gap:14px;font-size:12px;color:var(--mu);flex-wrap:wrap}.lg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px}i.y0{background:var(--b0)}i.y1{background:var(--ac)}
+.dd{position:relative;max-width:240px;margin:auto}.dc{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}.dc b{font-size:22px}.dc small{color:var(--mu)}
+.dl{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;font-size:12px;margin-top:8px}.dl i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px}
+.tabs{display:flex;gap:6px;background:var(--alt);padding:4px;border-radius:12px;flex-wrap:wrap}
+.tab{background:transparent;color:var(--mu);padding:7px 14px}.tab.on{background:var(--card);color:var(--ac);box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.pn{display:none;margin-top:14px}.pn.on{display:block;animation:fd .5s}@keyframes fd{from{opacity:0;transform:translateX(14px)}}
+.sc{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{border:1px solid var(--bd);padding:4px 8px;text-align:right;white-space:nowrap}
+th{background:linear-gradient(135deg,var(--hd),var(--ac));color:#fff;text-align:center}td:first-child{text-align:left;font-weight:600;cursor:pointer}
+tr:hover td{background:var(--alt)}tr.sel td{background:rgba(91,95,240,.2);box-shadow:inset 0 0 0 1px var(--ac)}
+tr.t td{font-weight:700;background:var(--alt)}th.y{font-size:14px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}.chip{background:var(--card);border:1px solid var(--bd);border-radius:99px;padding:3px 12px;font-size:12px;animation:pp .4s both}
+@keyframes pp{from{transform:scale(.3);opacity:0}}.chip a{cursor:pointer;color:var(--er);margin-left:6px}
+#tip{position:fixed;z-index:50;background:#111827;color:#fff;font-size:12px;padding:5px 9px;border-radius:8px;pointer-events:none;opacity:0;transition:opacity .15s}
+.toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--ok);color:#fff;padding:10px 20px;border-radius:99px;z-index:99;animation:ts 3.2s both}
+@keyframes ts{0%{opacity:0;transform:translate(-50%,30px)}10%,85%{opacity:1;transform:translate(-50%,0)}100%{opacity:0}}
+.cf{position:fixed;width:8px;height:12px;border-radius:2px;z-index:99;pointer-events:none;animation:cf 1.3s cubic-bezier(.2,.7,.3,1) forwards}
+@keyframes cf{40%{transform:translate(calc(var(--x)*.6),var(--y))}to{transform:translate(var(--x),320px) rotate(var(--r));opacity:0}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.rv{opacity:1;transform:none}}
+input{background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:10px;padding:9px 12px;font-size:14px;min-width:200px}
+</style></head><body><main>
+<div class="blob b1"></div><div class="blob b2"></div>
+<header class="hero"><div><h1>Care Connect</h1><p>Daily Report Builder · drop two files, watch the month update</p></div><div class="row"><span id="st" class="pill">Connecting…</span><button class="s" id="lg">Sign in</button><button class="s" id="th" title="Light / dark">🌓</button></div></header>
+<section class="card" id="lf" hidden><h2>Sign in to save data</h2><div class="row"><input id="em" type="email" placeholder="Email" autocomplete="username"><input id="pw" type="password" placeholder="Password" autocomplete="current-password"><button id="si">Sign in</button></div><div id="le" class="er"></div></section>
+<section class="kp" id="kp"></section>
+<section class="card rv" id="dz"><input type="file" id="fi" multiple accept=".xlsx,.xls,.csv" hidden><div class="dzi">⬆️</div><b>Drop today’s files here</b><span class="mu">or click to browse · CRM .xlsx + queue .csv (any order)</span><div class="row slots"><span id="s1" class="slot">CRM report (.xlsx)</span><span id="s2" class="slot">Queue report (.csv)</span></div></section>
+<button id="go" hidden></button>
+<section class="card rv"><h2>Day preview</h2><div id="msg" class="mu">Waiting for both files…</div><div id="pv"></div><button id="sv" disabled>Save this day to its month</button></section>
+<section class="g2 rv"><div class="card"><h2>Monthly calls · 2025 vs 2026</h2><div id="ch"></div><div class="lg"><span><i class="y0"></i>2025</span><span><i class="y1"></i>2026</span><span>Hover a bar for details</span></div></div><div class="card"><h2>2026 complaint mix</h2><div class="dd" id="dd"></div></div></section>
+<h2>Saved days <span class="mu" style="font-weight:400">(re-uploading a date replaces it)</span></h2><div class="chips" id="days"></div>
+<section class="card rv"><div class="row" style="justify-content:space-between"><div class="tabs"><button class="tab on" data-p="p1">Monthly summary</button><button class="tab" data-p="p2">Complaints break-up</button><button class="tab" data-p="p3">Waiting time</button></div><button class="s" id="ex">⬇ Download Excel</button></div>
+<div class="pn on" id="p1"><div class="sc" id="t1"></div></div><div class="pn" id="p2"><div class="sc" id="t2"></div></div><div class="pn" id="p3"><div class="sc" id="t3"></div></div>
+<p class="mu">Tip: click a month name to highlight it across all tables. WD = days loaded · PD(Avg) = total ÷ WD · Complaints = CRM Category “Complaints”.</p></section>
+</main><div id="tip"></div>
+<script>
+const MN=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+// history taken from the existing reports: [WD,total,complaints,(cargo),CODHD,T2T,HD]
+const A=[[31,39195,3479,2128,29,902],[28,26548,2686,1659,17,742],[31,34671,2466,1418,25,677],[30,31891,2279,1436,11,666],[31,43560,3283,1835,17,1134],[30,43886,1990,972,22,705],[31,60253,5510,2308,44,1738],[31,36449,3802,2281,18,1203],[30,34388,2594,1601,23,749],[31,34825,2251,1154,19,811],[30,33872,1984,860,26,798],[31,49761,4189,2093,37,1501]];
+const B=[[31,41349,5172,496,2903,25,1748],[28,30735,4364,480,2245,26,1613],[31,33511,3960,360,2168,14,1418],[30,31646,4167,268,2343,9,1547],[31,33769,3596,461,1748,22,1365],[30,34731,3574,420,1809,15,1330],[31,50039,5179,1120,1829,26,2204],[31,29923,3679,322,1506,15,1836],[13,11078,1052,86,472,2,492]];
+const W={"2026-05":[25172,2335,2944,2269,1049],"2026-06":[27990,2037,2269,1867,568],"2026-07":[38440,3846,4146,2894,700],"2026-08":[25162,1688,1693,1120,260],"2026-09":[9771,492,503,256,56]};
+const key=(y,m)=>y+"-"+String(m+1).padStart(2,"0");
+const BASE={};
+A.forEach((r,i)=>BASE[key(2025,i)]={wd:r[0],t:r[1],c:r[2],cg:r[2]-r[3]-r[4]-r[5],cod:r[3],t2t:r[4],hd:r[5]});
+B.forEach((r,i)=>BASE[key(2026,i)]={wd:r[0],t:r[1],c:r[2],cg:r[3],cod:r[4],t2t:r[5],hd:r[6]});
+let days={},pend=null,col=null;
+const LK="careconnect:days";
+const lsGet=()=>{try{return JSON.parse(localStorage.getItem(LK)||"{}")||{}}catch(e){return {}}};
+const lsSet=()=>{try{localStorage.setItem(LK,JSON.stringify(days));return true}catch(e){return false}};
+// ---- Supabase (publishable key is safe in the browser; access is enforced by row-level security)
+const SB="https://rmkzkzmohwvtmzcdvnzg.supabase.co",KEY="sb_publishable_7f17cuZQhetXKP3N37TCJQ_npybS9fw",SK="careconnect:session";
+let ses=null,online=false,lastErr="";try{ses=JSON.parse(localStorage.getItem(SK)||"null")}catch(e){}
+function saveSes(x){ses=x;try{x?localStorage.setItem(SK,JSON.stringify(x)):localStorage.removeItem(SK)}catch(e){}updAuth()}
+async function auth(body,grant){const r=await fetch(`${SB}/auth/v1/token?grant_type=${grant}`,{method:"POST",headers:{apikey:KEY,"Content-Type":"application/json"},body:JSON.stringify(body)}),j=await r.json();
+ if(!r.ok)throw new Error(j.error_description||j.msg||"Sign-in failed");
+ saveSes({at:j.access_token,rt:j.refresh_token,exp:Date.now()+(j.expires_in-60)*1000,email:(j.user&&j.user.email)||(ses&&ses.email)||""})}
+async function token(){if(!ses)return null;if(Date.now()>ses.exp){try{await auth({refresh_token:ses.rt},"refresh_token")}catch(e){saveSes(null);return null}}return ses.at}
+async function api(path,opt={}){const t=await token(),h={apikey:KEY,"Content-Type":"application/json",...(t?{Authorization:"Bearer "+t}:{}),...(opt.headers||{})},r=await fetch(SB+"/rest/v1/"+path,{...opt,headers:h});
+ if(!r.ok){let m="";try{const j=await r.json();m=j.message||j.hint||""}catch(e){}throw new Error(m||"HTTP "+r.status)}
+ const x=await r.text();return x?JSON.parse(x):null}
+function setSt(){$("st").innerHTML=online?"Connected to Supabase · "+(ses?"signed in as "+(ses.email||"user"):"view only (sign in to save)"):'<span class=er>Offline – showing this browser’s copy'+(lastErr?" ("+lastErr+")":"")+'</span>'}
+function updAuth(){$("lg").textContent=ses?"Sign out":"Sign in";setSt()}
+async function load(){try{const rows=await api("days?select=id,data"),d={};rows.forEach(x=>d[x.id]=x.data);online=true;lastErr="";setSt();
+ if(JSON.stringify(d)!==JSON.stringify(days)){days=d;lsSet();render()}}catch(e){online=false;lastErr=e.message;setSt()}}
+function needLogin(){$("lf").hidden=false;scrollTo({top:0,behavior:"smooth"});$("em").focus()}
+const $=id=>document.getElementById(id),n=v=>v?Math.round(v).toLocaleString("en-US"):"-",p=(a,b)=>b&&a?Math.round(a/b*100)+"%":"-";
+function agg(k){const o={wd:0,t:0,c:0,cg:0,cod:0,t2t:0,hd:0,w:[0,0,0,0,0]},b=BASE[k];
+ if(b)for(const f in b)o[f]+=b[f];if(W[k])W[k].forEach((v,i)=>o.w[i]+=v);
+ for(const id in days){const d=days[id];if(id.slice(0,7)!==k)continue;o.wd++;["t","c","cg","cod","t2t","hd"].forEach(f=>o[f]+=d[f]||0);(d.w||[]).forEach((v,i)=>o.w[i]+=v)}
+ return o}
+const hasW=o=>o.w.some(v=>v);
+function tbl(h,rows){return "<table>"+h+rows+"</table>"}
+function render(){
+ const Y=[2025,2026],M=Y.map(y=>MN.map((_,i)=>agg(key(y,i))));
+ // table 1
+ let h='<tr><th rowspan=2>Month</th>'+Y.map(y=>`<th class=y colspan=8>${y}</th>`).join("")+'</tr><tr>'+Y.map(()=>["WD","Total Calls","PD(Avg)","Complaint","PD(Avg)","%Age","Info","%Age"].map(x=>`<th>${x}</th>`).join("")).join("")+'</tr>';
+ const T=[{wd:0,t:0,c:0},{wd:0,t:0,c:0}];let r="";
+ MN.forEach((m,i)=>{r+=`<tr><td>${m}</td>`;M.forEach((a,j)=>{const o=a[i],inf=o.t-o.c;T[j].wd+=o.wd;T[j].t+=o.t;T[j].c+=o.c;
+  r+=`<td>${n(o.wd)}</td><td>${n(o.t)}</td><td>${n(o.wd&&o.t/o.wd)}</td><td>${n(o.c)}</td><td>${n(o.wd&&o.c/o.wd)}</td><td>${p(o.c,o.t)}</td><td>${n(inf)}</td><td>${p(inf,o.t)}</td>`});r+="</tr>"});
+ r+='<tr class=t><td>Total</td>'+T.map(o=>`<td>${n(o.wd)}</td><td>${n(o.t)}</td><td></td><td>${n(o.c)}</td><td></td><td>${p(o.c,o.t)}</td><td>${n(o.t-o.c)}</td><td>${p(o.t-o.c,o.t)}</td>`).join("")+"</tr>";
+ $("t1").innerHTML=tbl(h,r);
+ // table 2
+ h='<tr><th rowspan=2>Month</th><th class=y colspan=8>2025</th><th class=y colspan=9>2026</th></tr><tr><th>%Age</th><th>CODHD</th><th>%Age</th><th>CODT2T</th><th>%Age</th><th>HD</th><th>%Age</th><th>Total</th><th>Cargo</th><th>%Age</th><th>CODHD</th><th>%Age</th><th>CODT2T</th><th>%Age</th><th>HD</th><th>%Age</th><th>Total</th></tr>';
+ r="";const S=[{cg:0,cod:0,t2t:0,hd:0,c:0},{cg:0,cod:0,t2t:0,hd:0,c:0}];
+ MN.forEach((m,i)=>{r+=`<tr><td>${m}</td>`;M.forEach((a,j)=>{const o=a[i];["cg","cod","t2t","hd","c"].forEach(f=>S[j][f]+=o[f]);
+  r+=(j?`<td>${n(o.cg)}</td>`:"")+`<td>${p(o.cg,o.c)}</td><td>${n(o.cod)}</td><td>${p(o.cod,o.c)}</td><td>${n(o.t2t)}</td><td>${p(o.t2t,o.c)}</td><td>${n(o.hd)}</td><td>${p(o.hd,o.c)}</td><td>${n(o.c)}</td>`});r+="</tr>"});
+ r+='<tr class=t><td>Total</td>'+S.map((o,j)=>(j?`<td>${n(o.cg)}</td>`:"")+`<td>${p(o.cg,o.c)}</td><td>${n(o.cod)}</td><td>${p(o.cod,o.c)}</td><td>${n(o.t2t)}</td><td>${p(o.t2t,o.c)}</td><td>${n(o.hd)}</td><td>${p(o.hd,o.c)}</td><td>${n(o.c)}</td>`).join("")+"</tr>";
+ $("t2").innerHTML=tbl(h,r);
+ // table 3
+ const ms=M[1].map((o,i)=>[i,o]).filter(x=>hasW(x[1])),tot=[0,0,0,0,0];ms.forEach(([i,o])=>o.w.forEach((v,k)=>tot[k]+=v));
+ const tt=tot.reduce((a,b)=>a+b,0),L=["0 - 15 sec","16 - 30 sec","31 sec - 1 min","1.1 - 2 min","above 2 min"];
+ h='<tr><th rowspan=2>Time - Slot</th>'+ms.map(([i])=>`<th colspan=2>${MN[i]}-26</th>`).join("")+'<th colspan=2>Total</th><th colspan=2>Accumulated</th></tr><tr>'+ms.map(()=>"<th>Calls</th><th>%Age</th>").join("")+"<th>Calls</th><th>%</th><th>Calls</th><th>%</th></tr>";
+ r="";let acc=0;
+ L.forEach((l,k)=>{acc+=tot[k];r+=`<tr><td>${l}</td>`+ms.map(([i,o])=>{const s=o.w.reduce((a,b)=>a+b,0);return `<td>${n(o.w[k])}</td><td>${p(o.w[k],s)}</td>`}).join("")+`<td>${n(tot[k])}</td><td>${p(tot[k],tt)}</td><td>${n(acc)}</td><td>${tt?(acc/tt*100).toFixed(1)+"%":"-"}</td></tr>`});
+ r+='<tr class=t><td>Total</td>'+ms.map(([i,o])=>`<td>${n(o.w.reduce((a,b)=>a+b,0))}</td><td></td>`).join("")+`<td>${n(tt)}</td><td></td><td></td><td></td></tr>`;
+ r+='<tr class=t><td>Within 1 Min</td>'+ms.map(([i,o])=>{const s=o.w.reduce((a,b)=>a+b,0),w=o.w[0]+o.w[1]+o.w[2];return `<td>${n(w)}</td><td>${p(w,s)}</td>`}).join("")+`<td>${n(tot[0]+tot[1]+tot[2])}</td><td>${p(tot[0]+tot[1]+tot[2],tt)}</td><td></td><td></td></tr>`;
+ $("t3").innerHTML=tbl(h,r);
+ viz(M,tot,tt);
+ // saved days
+ const ids=Object.keys(days).sort();
+ $("days").innerHTML=ids.length?ids.map(id=>`<span class=chip>${id} · ${n(days[id].t)} calls<a data-d="${id}" title="Remove">✕</a></span>`).join(""):'<span class=mu>No days saved yet. Existing Jan 2025 – Sep 2026 history is already in the tables.</span>';
+ $("days").querySelectorAll("a").forEach(a=>a.onclick=async()=>{if(!await token())return needLogin();const id=a.dataset.d;if(confirm("Remove "+id+"?")){try{await api("days?id=eq."+encodeURIComponent(id),{method:"DELETE"});delete days[id];lsSet();render()}catch(e){alert("Could not remove: "+e.message)}}})}
+// ---- reading files
+const rd=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsArrayBuffer(f)});
+const rows=(buf,hdr)=>{const wb=XLSX.read(buf,{type:"array",cellDates:false});return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{range:hdr,defval:""})};
+$("go").onclick=async()=>{
+ pend=null;$("sv").disabled=true;$("pv").innerHTML="";const a=FA,b=FB;
+ if(!a||!b){$("msg").innerHTML='<span class=er>Please choose both files.</span>';return}
+ try{
+  const crm=rows(await rd(a),1).filter(r=>r.TicketId!==""&&r.TicketId!==undefined),q=rows(await rd(b),0).filter(r=>r.id!=="");
+  if(!crm.length||!q.length)throw new Error("A file looks empty or in a different format.");
+  const cnt={};crm.forEach(r=>{const d=String(r.Created_Date).trim();cnt[d]=(cnt[d]||0)+1});
+  const top=Object.entries(cnt).sort((x,y)=>y[1]-x[1])[0][0],pm=top.match(/(\d\d)-(\d\d)-(\d{4})/);
+  if(!pm)throw new Error("Could not read Created_Date ("+top+").");
+  const date=`${pm[3]}-${pm[2]}-${pm[1]}`,r0=q[0],qd=`${r0.created_year}-${String(r0.created_month).padStart(2,"0")}-${String(r0.created_day).padStart(2,"0")}`;
+  const cm=crm.filter(r=>r.Category==="Complaints"),pc=s=>cm.filter(r=>String(r.Product).trim().toUpperCase()===s).length;
+  const qq=q.filter(r=>r.event!=="IVR Hangup"),w=[0,0,0,0,0];
+  qq.forEach(r=>{const h=+r.queue_holdtime||0;w[h<=15?0:h<=30?1:h<=60?2:h<=120?3:4]++});
+  const rec={d:date,t:crm.length,c:cm.length,cg:pc("CARGO"),cod:pc("COD HD"),t2t:pc("CODT2T"),hd:pc("HD"),w,qcalls:q.length,ivr:q.length-qq.length};
+  rec.other=rec.c-rec.cg-rec.cod-rec.t2t-rec.hd;
+  pend=rec;let m=`Detected date <b>${date}</b> (${MN[+pm[2]-1]} ${pm[3]}).`;
+  if(qd!==date)m+=` <span class=er>Queue CSV is dated ${qd} – check you picked matching files.</span>`;
+  if(days[date])m+=' <span class=er>This date is already saved – saving will replace it.</span>';
+  if(rec.other)m+=` <span class=er>${rec.other} complaint(s) have a product outside Cargo/COD HD/CODT2T/HD and won’t appear in the break-up.</span>`;
+  $("msg").innerHTML=m;
+  const kv=[["Total calls (CRM)",rec.t],["Complaints",rec.c],["Info",rec.t-rec.c],["Cargo",rec.cg],["COD HD",rec.cod],["COD T2T",rec.t2t],["HD",rec.hd],["Queue calls",qq.length],["IVR hang-ups (excluded)",rec.ivr],["Wait 0-15s",w[0]],["16-30s",w[1]],["31-60s",w[2]],["1-2 min",w[3]],[">2 min",w[4]]];
+  $("pv").className="pv";$("pv").innerHTML=kv.map(([k,v],i)=>`<div style="--i:${i}">${k}<b>${n(v)||0}</b></div>`).join("");$("sv").disabled=false;document.querySelectorAll("#pv b").forEach((b,i)=>cu(b,kv[i][1]));
+ }catch(e){$("msg").innerHTML='<span class=er>'+e.message+'</span>'}};
+$("sv").onclick=async()=>{
+ if(!pend)return;if(!await token()){$("msg").innerHTML+=' <span class=er>Sign in first to save.</span>';return needLogin()}
+ const rec=pend;
+ try{await api("days",{method:"POST",headers:{Prefer:"resolution=merge-duplicates,return=minimal"},body:JSON.stringify({id:rec.d,data:rec,updated_at:new Date().toISOString()})});
+  days[rec.d]=rec;lsSet();$("msg").innerHTML=`<span class=ok>Saved ${rec.d}. Tables updated.</span>`;toast("✓ Saved "+rec.d);boom();
+  pend=null;$("sv").disabled=true;$("pv").innerHTML="";FA=FB=null;slots();render()}
+ catch(e){$("msg").innerHTML='<span class=er>Could not save: '+e.message+'</span>'}};
+$("ex").onclick=()=>{
+ const wb=XLSX.utils.book_new();[["Monthly Summary","t1"],["Complaints Break-up","t2"],["Calls Waiting","t3"]].forEach(([nm,id])=>XLSX.utils.book_append_sheet(wb,XLSX.utils.table_to_sheet($(id).firstChild),nm));
+ XLSX.writeFile(wb,"Care_Connect_Reports.xlsx")};
+let FA=null,FB=null;
+function cu(el,to,f=n){const a=el._v||0,t0=performance.now();el._v=to;(function s(t){const k=Math.min(1,(t-t0)/800),e=1-Math.pow(1-k,3);el.textContent=f(a+(to-a)*e);if(k<1)requestAnimationFrame(s)})(t0)}
+function toast(t){const e=document.createElement("div");e.className="toast";e.textContent=t;document.body.append(e);setTimeout(()=>e.remove(),3300)}
+function boom(){for(let i=0;i<45;i++){const e=document.createElement("i");e.className="cf";e.style.cssText=`--x:${(Math.random()-.5)*700}px;--y:${-Math.random()*380-80}px;--r:${Math.random()*720}deg;background:hsl(${Math.random()*360} 85% 60%);left:50%;top:65%`;document.body.append(e);setTimeout(()=>e.remove(),1400)}}
+function slots(){$("s1").className="slot"+(FA?" on":"");$("s1").textContent=FA?"✓ "+FA.name:"CRM report (.xlsx)";$("s2").className="slot"+(FB?" on":"");$("s2").textContent=FB?"✓ "+FB.name:"Queue report (.csv)"}
+function take(fs){[...fs].forEach(f=>{if(/\.csv$/i.test(f.name))FB=f;else if(/\.xlsx?$/i.test(f.name))FA=f});slots();if(FA&&FB)$("go").click()}
+const dz=$("dz");dz.onclick=()=>$("fi").click();$("fi").onchange=e=>{take(e.target.files);e.target.value=""};
+["dragenter","dragover"].forEach(v=>dz.addEventListener(v,e=>{e.preventDefault();dz.classList.add("hot")}));
+["dragleave","drop"].forEach(v=>dz.addEventListener(v,e=>{e.preventDefault();dz.classList.remove("hot")}));
+dz.addEventListener("drop",e=>take(e.dataTransfer.files));
+$("th").onclick=()=>{const d=document.documentElement,dk=d.dataset.theme==="dark"||(!d.dataset.theme&&matchMedia("(prefers-color-scheme:dark)").matches);d.dataset.theme=dk?"light":"dark"};
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x===b));document.querySelectorAll(".pn").forEach(p=>p.classList.toggle("on",p.id===b.dataset.p))});
+document.addEventListener("click",e=>{const td=e.target.closest(".sc td:first-child");if(!td)return;const m=td.textContent;document.querySelectorAll(".sc tr").forEach(r=>{if(r.firstChild.textContent===m)r.classList.toggle("sel")})});
+document.addEventListener("mousemove",e=>{const t=e.target.dataset&&e.target.dataset.t,g=$("tip");g.style.opacity=t?1:0;if(t){g.textContent=t;g.style.left=Math.min(e.clientX+12,innerWidth-230)+"px";g.style.top=e.clientY+14+"px"}});
+$("dd").addEventListener("mouseover",e=>{const t=e.target.dataset;if(t&&t.n){$("dn").textContent=t.v;$("dl").textContent=t.n}});
+const io=new IntersectionObserver(es=>es.forEach(e=>e.isIntersecting&&e.target.classList.add("in")),{threshold:.08});document.querySelectorAll(".rv").forEach(x=>io.observe(x));
+function viz(M,tot,tt){
+ const li=M[1].reduce((a,o,i)=>o.t?i:a,-1),ytd=(y,k)=>M[y].slice(0,li+1).reduce((s,o)=>s+o[k],0),yt=ytd(1,"t"),pt=ytd(0,"t"),dl=pt?(yt/pt-1)*100:0,cr=yt?ytd(1,"c")/yt*100:0,w1=tt?(tot[0]+tot[1]+tot[2])/tt*100:0,pc=v=>v.toFixed(1)+"%";
+ const K=[["📞","Calls · "+(li>=0?MN[li]+" 2026":"–"),li>=0?M[1][li].t:0,n,li>=0?M[1][li].wd+" days loaded":""],["📈","YTD 2026 calls",yt,n,(dl>=0?"▲ ":"▼ ")+Math.abs(dl).toFixed(1)+"% vs same months 2025"],["⚠️","Complaint rate",cr,pc,"of 2026 calls"],["⏱️","Answered within 1 min",w1,pc,"IVR waiting analysis"]];
+ $("kp").innerHTML=K.map((k,i)=>`<div class=kc style="--i:${i}"><span>${k[0]}</span><small>${k[1]}</small><b data-i=${i}>0</b><em>${k[4]}</em></div>`).join("");
+ $("kp").querySelectorAll("b").forEach(b=>cu(b,K[b.dataset.i][2],K[b.dataset.i][3]));
+ const mx=Math.max(...M[0].map(o=>o.t),...M[1].map(o=>o.t),1),H=190;let s='<svg viewBox="0 0 720 240">';
+ [0,.5,1].forEach(g=>{const y=H-g*H+10;s+=`<line class=gl x1=34 x2=715 y1=${y} y2=${y} /><text class=ax x=30 y=${y+4} text-anchor=end>${Math.round(mx*g/1000)}k</text>`});
+ MN.forEach((m,i)=>{const x=42+i*56;s+=`<text class=ax x=${x+21} y=230 text-anchor=middle>${m}</text>`;[0,1].forEach(y=>{const o=M[y][i],h=o.t/mx*H;s+=`<rect class="bar y${y}" x=${x+y*22} y=${H-h+10} width=20 height=${Math.max(h,0)} rx=4 style="--d:${i*45+y*25}ms" data-t="${m} ${2025+y}: ${n(o.t)} calls · ${n(o.c)} complaints"/>`})});
+ $("ch").innerHTML=s+"</svg>";
+ const P=[["Cargo","cg"],["COD HD","cod"],["COD T2T","t2t"],["HD","hd"]],c={cg:0,cod:0,t2t:0,hd:0};M[1].forEach(o=>P.forEach(([,k])=>c[k]+=o[k]));const cs=P.reduce((a,[,k])=>a+c[k],0);
+ let off=0,d='<svg viewBox="0 0 160 160"><g transform="rotate(-90 80 80)">';
+ P.forEach(([nm,k],i)=>{const f=cs?c[k]/cs:0,L=f*377,v=n(c[k])+" · "+Math.round(f*100)+"%";d+=`<circle class=seg cx=80 cy=80 r=60 fill=none stroke-width=22 stroke="var(--c${i})" stroke-dasharray="${L} ${377-L}" stroke-dashoffset=${-off} data-n="${nm}" data-v="${v}" data-t="${nm}: ${v}" style="--d:${i*130}ms"/>`;off+=L});
+ $("dd").innerHTML=d+`</g></svg><div class=dc><b id=dn>${n(cs)}</b><small id=dl>complaints 2026</small></div></div><div class=dl>`+P.map((p,i)=>`<span><i style="background:var(--c${i})"></i>${p[0]}</span>`).join("")+"</div>";
+}
+$("lg").onclick=()=>{if(ses)saveSes(null);else $("lf").hidden=!$("lf").hidden};
+$("si").onclick=async()=>{$("le").textContent="";try{await auth({email:$("em").value.trim(),password:$("pw").value},"password");$("pw").value="";$("lf").hidden=true;toast("✓ Signed in");load()}catch(e){$("le").textContent=e.message}};
+$("pw").onkeydown=e=>{if(e.key==="Enter")$("si").click()};
+days=lsGet();updAuth();render();load();setInterval(load,60000);addEventListener("focus",load);
+</script></body></html>
