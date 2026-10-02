@@ -3,6 +3,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Care Connect – Daily Report Builder</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <style>
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f3f5fb;--card:rgba(255,255,255,.8);--tx:#172033;--mu:#6b7690;--bd:#d9dfec;--hd:#3b3fd8;--hdt:#fff;--ac:#5b5ff0;--ok:#0f9d58;--er:#d92d20;--alt:#eef1fb;--b0:#a9b4cf;--c0:#f59e0b;--c1:#3b82f6;--c2:#a855f7;--c3:#10b981}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1017;--card:rgba(26,32,45,.8);--tx:#e8ebf3;--mu:#98a2b8;--bd:#2c3547;--hd:#3a3fb5;--alt:#1f2636;--b0:#4b5671;--ok:#4ade80;--er:#f97066}}
@@ -65,11 +66,9 @@ tr.t td{font-weight:700;background:var(--alt)}th.y{font-size:14px}
 .cf{position:fixed;width:8px;height:12px;border-radius:2px;z-index:99;pointer-events:none;animation:cf 1.3s cubic-bezier(.2,.7,.3,1) forwards}
 @keyframes cf{40%{transform:translate(calc(var(--x)*.6),var(--y))}to{transform:translate(var(--x),320px) rotate(var(--r));opacity:0}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.rv{opacity:1;transform:none}}
-input{background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:10px;padding:9px 12px;font-size:14px;min-width:200px}
 </style></head><body><main>
 <div class="blob b1"></div><div class="blob b2"></div>
-<header class="hero"><div><h1>Care Connect</h1><p>Daily Report Builder · drop two files, watch the month update</p></div><div class="row"><span id="st" class="pill">Connecting…</span><button class="s" id="lg">Sign in</button><button class="s" id="th" title="Light / dark">🌓</button></div></header>
-<section class="card" id="lf" hidden><h2>Sign in to save data</h2><div class="row"><input id="em" type="email" placeholder="Email" autocomplete="username"><input id="pw" type="password" placeholder="Password" autocomplete="current-password"><button id="si">Sign in</button></div><div id="le" class="er"></div></section>
+<header class="hero"><div><h1>Care Connect</h1><p>Daily Report Builder · drop two files, watch the month update</p></div><div class="row"><span id="st" class="pill">Connecting…</span><button class="s" id="th" title="Light / dark">🌓</button></div></header>
 <section class="kp" id="kp"></section>
 <section class="card rv" id="dz"><input type="file" id="fi" multiple accept=".xlsx,.xls,.csv" hidden><div class="dzi">⬆️</div><b>Drop today’s files here</b><span class="mu">or click to browse · CRM .xlsx + queue .csv (any order)</span><div class="row slots"><span id="s1" class="slot">CRM report (.xlsx)</span><span id="s2" class="slot">Queue report (.csv)</span></div></section>
 <button id="go" hidden></button>
@@ -94,22 +93,6 @@ let days={},pend=null,col=null;
 const LK="careconnect:days";
 const lsGet=()=>{try{return JSON.parse(localStorage.getItem(LK)||"{}")||{}}catch(e){return {}}};
 const lsSet=()=>{try{localStorage.setItem(LK,JSON.stringify(days));return true}catch(e){return false}};
-// ---- Supabase (publishable key is safe in the browser; access is enforced by row-level security)
-const SB="https://rmkzkzmohwvtmzcdvnzg.supabase.co",KEY="sb_publishable_7f17cuZQhetXKP3N37TCJQ_npybS9fw",SK="careconnect:session";
-let ses=null,online=false,lastErr="";try{ses=JSON.parse(localStorage.getItem(SK)||"null")}catch(e){}
-function saveSes(x){ses=x;try{x?localStorage.setItem(SK,JSON.stringify(x)):localStorage.removeItem(SK)}catch(e){}updAuth()}
-async function auth(body,grant){const r=await fetch(`${SB}/auth/v1/token?grant_type=${grant}`,{method:"POST",headers:{apikey:KEY,"Content-Type":"application/json"},body:JSON.stringify(body)}),j=await r.json();
- if(!r.ok)throw new Error(j.error_description||j.msg||"Sign-in failed");
- saveSes({at:j.access_token,rt:j.refresh_token,exp:Date.now()+(j.expires_in-60)*1000,email:(j.user&&j.user.email)||(ses&&ses.email)||""})}
-async function token(){if(!ses)return null;if(Date.now()>ses.exp){try{await auth({refresh_token:ses.rt},"refresh_token")}catch(e){saveSes(null);return null}}return ses.at}
-async function api(path,opt={}){const t=await token(),h={apikey:KEY,"Content-Type":"application/json",...(t?{Authorization:"Bearer "+t}:{}),...(opt.headers||{})},r=await fetch(SB+"/rest/v1/"+path,{...opt,headers:h});
- if(!r.ok){let m="";try{const j=await r.json();m=j.message||j.hint||""}catch(e){}throw new Error(m||"HTTP "+r.status)}
- const x=await r.text();return x?JSON.parse(x):null}
-function setSt(){$("st").innerHTML=online?"Connected to Supabase · "+(ses?"signed in as "+(ses.email||"user"):"view only (sign in to save)"):'<span class=er>Offline – showing this browser’s copy'+(lastErr?" ("+lastErr+")":"")+'</span>'}
-function updAuth(){$("lg").textContent=ses?"Sign out":"Sign in";setSt()}
-async function load(){try{const rows=await api("days?select=id,data"),d={};rows.forEach(x=>d[x.id]=x.data);online=true;lastErr="";setSt();
- if(JSON.stringify(d)!==JSON.stringify(days)){days=d;lsSet();render()}}catch(e){online=false;lastErr=e.message;setSt()}}
-function needLogin(){$("lf").hidden=false;scrollTo({top:0,behavior:"smooth"});$("em").focus()}
 const $=id=>document.getElementById(id),n=v=>v?Math.round(v).toLocaleString("en-US"):"-",p=(a,b)=>b&&a?Math.round(a/b*100)+"%":"-";
 function agg(k){const o={wd:0,t:0,c:0,cg:0,cod:0,t2t:0,hd:0,w:[0,0,0,0,0]},b=BASE[k];
  if(b)for(const f in b)o[f]+=b[f];if(W[k])W[k].forEach((v,i)=>o.w[i]+=v);
@@ -146,7 +129,7 @@ function render(){
  // saved days
  const ids=Object.keys(days).sort();
  $("days").innerHTML=ids.length?ids.map(id=>`<span class=chip>${id} · ${n(days[id].t)} calls<a data-d="${id}" title="Remove">✕</a></span>`).join(""):'<span class=mu>No days saved yet. Existing Jan 2025 – Sep 2026 history is already in the tables.</span>';
- $("days").querySelectorAll("a").forEach(a=>a.onclick=async()=>{if(!await token())return needLogin();const id=a.dataset.d;if(confirm("Remove "+id+"?")){try{await api("days?id=eq."+encodeURIComponent(id),{method:"DELETE"});delete days[id];lsSet();render()}catch(e){alert("Could not remove: "+e.message)}}})}
+ $("days").querySelectorAll("a").forEach(a=>a.onclick=async()=>{if(confirm("Remove "+a.dataset.d+"?")){delete days[a.dataset.d];lsSet();if(col)try{await col.doc(a.dataset.d).delete()}catch(e){}render()}})}
 // ---- reading files
 const rd=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsArrayBuffer(f)});
 const rows=(buf,hdr)=>{const wb=XLSX.read(buf,{type:"array",cellDates:false});return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{range:hdr,defval:""})};
@@ -174,15 +157,65 @@ $("go").onclick=async()=>{
   $("pv").className="pv";$("pv").innerHTML=kv.map(([k,v],i)=>`<div style="--i:${i}">${k}<b>${n(v)||0}</b></div>`).join("");$("sv").disabled=false;document.querySelectorAll("#pv b").forEach((b,i)=>cu(b,kv[i][1]));
  }catch(e){$("msg").innerHTML='<span class=er>'+e.message+'</span>'}};
 $("sv").onclick=async()=>{
- if(!pend)return;if(!await token()){$("msg").innerHTML+=' <span class=er>Sign in first to save.</span>';return needLogin()}
- const rec=pend;
- try{await api("days",{method:"POST",headers:{Prefer:"resolution=merge-duplicates,return=minimal"},body:JSON.stringify({id:rec.d,data:rec,updated_at:new Date().toISOString()})});
-  days[rec.d]=rec;lsSet();$("msg").innerHTML=`<span class=ok>Saved ${rec.d}. Tables updated.</span>`;toast("✓ Saved "+rec.d);boom();
-  pend=null;$("sv").disabled=true;$("pv").innerHTML="";FA=FB=null;slots();render()}
- catch(e){$("msg").innerHTML='<span class=er>Could not save: '+e.message+'</span>'}};
-$("ex").onclick=()=>{
- const wb=XLSX.utils.book_new();[["Monthly Summary","t1"],["Complaints Break-up","t2"],["Calls Waiting","t3"]].forEach(([nm,id])=>XLSX.utils.book_append_sheet(wb,XLSX.utils.table_to_sheet($(id).firstChild),nm));
- XLSX.writeFile(wb,"Care_Connect_Reports.xlsx")};
+ if(!pend)return;const rec=pend;days[rec.d]=rec;
+ const local=lsSet();let cloud=false,err="";
+ if(col)try{await col.doc(rec.d).set(rec);cloud=true}catch(e){err=e.message||e.code||""}
+ if(cloud){$("msg").innerHTML=`<span class=ok>Saved ${rec.d}. Tables updated.</span>`;toast("✓ Saved "+rec.d);boom()}
+ else if(local){$("msg").innerHTML=`<span class=ok>Saved ${rec.d} in this browser.</span>`+(err?` <span class=mu>(shared storage unavailable: ${err})</span>`:"");toast("✓ Saved "+rec.d);boom()}
+ else $("msg").innerHTML='<span class=er>Could not save – browser storage is blocked.</span>';
+ pend=null;$("sv").disabled=true;$("pv").innerHTML="";FA=FB=null;slots();render()};
+$("ex").onclick=async()=>{
+ try{
+ const wb=new ExcelJS.Workbook(),Y=[2025,2026],M=Y.map(y=>MN.map((_,i)=>agg(key(y,i))));
+ const HD="FFDCE6F1",LV="FFE4DFEC",BL="FF0070C0",thin={style:"thin"},med={style:"medium"},NUM='#,##0;-#,##0;"-"',PCT='0%;-0%;"-"',P=(a,b)=>b?a/b:0;
+ const mk=(nm,w)=>{const s=wb.addWorksheet(nm);w.forEach((x,i)=>s.getColumn(i+1).width=x);return s};
+ const put=(s,r,c,v,o={})=>{const x=s.getCell(r,c);if(v!=null)x.value=v;x.font={name:"Calibri",size:o.z||11,bold:!!o.b,color:{argb:o.k||"FF000000"}};if(o.f)x.fill={type:"pattern",pattern:"solid",fgColor:{argb:o.f}};x.alignment={horizontal:o.h||"right",vertical:"middle"};if(o.n)x.numFmt=o.n};
+ const each=(r1,c1,r2,c2,fn)=>{for(let r=r1;r<=r2;r++)for(let c=c1;c<=c2;c++)fn(r,c)};
+ const frame=(s,r1,c1,r2,c2)=>each(r1,c1,r2,c2,(r,c)=>s.getCell(r,c).border={top:thin,left:thin,bottom:thin,right:thin});
+ const edge=(s,r1,c1,r2,c2)=>each(r1,c1,r2,c2,(r,c)=>{const x=s.getCell(r,c),b={...x.border};if(r==r1)b.top=med;if(r==r2)b.bottom=med;if(c==c1)b.left=med;if(c==c2)b.right=med;x.border=b});
+ const hdr=(s,r,c,v,z)=>put(s,r,c,v,{b:1,h:"center",f:HD,z});
+ // ---- Sheet 1: Monthly Summary
+ let ws=mk("Monthly Summary",[8,6,12,9,11,9,8,11,8,6,12,9,11,9,8,11,8]);
+ each(1,1,2,17,(r,c)=>put(ws,r,c,null,{f:HD}));hdr(ws,1,1,"Month");
+ Y.forEach((y,j)=>{const c0=2+j*8;hdr(ws,1,c0,String(y),13);["WD","Total Calls","PD(Avg)","Complaint","PD(Avg)","%Age","Info","%Age"].forEach((h,k)=>hdr(ws,2,c0+k,h));ws.mergeCells(1,c0,1,c0+7)});
+ ws.mergeCells(1,1,2,1);
+ const T=[{wd:0,t:0,c:0},{wd:0,t:0,c:0}];
+ MN.forEach((m,i)=>{put(ws,3+i,1,m,{h:"left"});M.forEach((a,j)=>{const o=a[i];T[j].wd+=o.wd;T[j].t+=o.t;T[j].c+=o.c;
+  [o.wd,o.t,P(o.t,o.wd),o.c,P(o.c,o.wd),P(o.c,o.t),o.t-o.c,P(o.t-o.c,o.t)].forEach((v,k)=>put(ws,3+i,2+j*8+k,v,{n:k==5||k==7?PCT:NUM}))})});
+ put(ws,15,1,"Total",{b:1,h:"left"});
+ T.forEach((o,j)=>[o.wd,o.t,null,o.c,null,null,o.t-o.c,P(o.t-o.c,o.t)].forEach((v,k)=>put(ws,15,2+j*8+k,v,{b:1,n:k==7?PCT:NUM})));
+ frame(ws,1,1,15,17);[[1,1,2,17],[15,1,15,17],[1,1,15,9],[1,10,15,17]].forEach(a=>edge(ws,...a));
+ // ---- Sheet 2: Complaints Break-up
+ ws=mk("Complaints Break-up",[8,8,9,8,9,8,9,8,9,9,8,9,8,9,8,9,8,9]);
+ each(1,1,3,18,(r,c)=>put(ws,r,c,null,{f:HD}));hdr(ws,1,1,"Complaints Break-up",13);ws.mergeCells(1,1,1,18);hdr(ws,2,1,"Month");ws.mergeCells(2,1,3,1);
+ const H2=[["%Age","CODHD","%Age","CODT2T","%Age","HD","%Age","Total"],["Cargo","%Age","CODHD","%Age","CODT2T","%Age","HD","%Age","Total"]];
+ [[2,8],[10,9]].forEach(([c0,n],j)=>{hdr(ws,2,c0,String(Y[j]),13);ws.mergeCells(2,c0,2,c0+n-1);H2[j].forEach((h,k)=>hdr(ws,3,c0+k,h))});
+ const row=(o,j)=>{const Q=v=>o.c?v/o.c:null;return j?[o.cg,Q(o.cg),o.cod,Q(o.cod),o.t2t,Q(o.t2t),o.hd,Q(o.hd),o.c]:[Q(o.cg),o.cod,Q(o.cod),o.t2t,Q(o.t2t),o.hd,Q(o.hd),o.c]};
+ const isP=(j,k)=>k<8&&(j?k%2==1:k%2==0),S=[0,0].map(()=>({cg:0,cod:0,t2t:0,hd:0,c:0}));
+ MN.forEach((m,i)=>{put(ws,4+i,1,m,{h:"left"});M.forEach((a,j)=>{const o=a[i];for(const f in S[j])S[j][f]+=o[f];row(o,j).forEach((v,k)=>put(ws,4+i,[2,10][j]+k,v,{n:isP(j,k)?PCT:NUM}))})});
+ put(ws,16,1,"Total",{b:1,h:"left"});S.forEach((o,j)=>row(o,j).forEach((v,k)=>put(ws,16,[2,10][j]+k,v,{b:1,n:isP(j,k)?PCT:NUM})));
+ frame(ws,1,1,16,18);[[1,1,3,18],[16,1,16,18],[1,1,16,9],[1,10,16,18]].forEach(a=>edge(ws,...a));
+ // ---- Sheet 3: Calls Waiting (IVR)
+ const ms=M[1].map((o,i)=>[i,o]).filter(x=>hasW(x[1])),tot=[0,0,0,0,0],nc=1+ms.length*2+4,c=2+ms.length*2,sm=o=>o.w.reduce((a,b)=>a+b,0);
+ ms.forEach(([i,o])=>o.w.forEach((v,k)=>tot[k]+=v));const tt=tot.reduce((a,b)=>a+b,0);
+ ws=mk("Calls Waiting",[16,...Array(nc-1).fill(10)]);
+ each(1,1,3,nc,(r,cc)=>put(ws,r,cc,null,{f:HD}));hdr(ws,1,1,"Calls Waiting (IVR) Time Analysis",13);ws.mergeCells(1,1,1,nc);hdr(ws,2,1,"Time - Slot");ws.mergeCells(2,1,3,1);
+ [...ms.map(([i])=>`${MN[i]}-26`),"Total","Accumulated"].forEach((g,x)=>{const cc=2+x*2;hdr(ws,2,cc,g);ws.mergeCells(2,cc,2,cc+1);hdr(ws,3,cc,"Calls");hdr(ws,3,cc+1,x<ms.length?"%Age":"%")});
+ let acc=0;
+ ["0 - 15 sec","16 - 30 sec","31 sec - 1 min","1.1 - 2 min","above 2 min"].forEach((l,k)=>{const r=4+k,f=k<3?LV:undefined;acc+=tot[k];put(ws,r,1,l,{h:"left",f});
+  ms.forEach(([i,o],x)=>{put(ws,r,2+x*2,o.w[k],{n:NUM,f});put(ws,r,3+x*2,P(o.w[k],sm(o)),{n:PCT,f})});
+  put(ws,r,c,tot[k],{n:NUM,f});put(ws,r,c+1,P(tot[k],tt),{n:PCT,f});put(ws,r,c+2,acc,{n:NUM,f});put(ws,r,c+3,P(acc,tt),{n:"0.0%",f})});
+ each(9,1,10,nc,(r,cc)=>put(ws,r,cc,null,{b:1,k:r==10?BL:undefined}));
+ put(ws,9,1,"Total",{b:1,h:"left"});ms.forEach(([i,o],x)=>put(ws,9,2+x*2,sm(o),{b:1,n:NUM}));put(ws,9,c,tt,{b:1,n:NUM});
+ put(ws,10,1,"Within 1 Min",{b:1,k:BL,h:"left"});
+ ms.forEach(([i,o],x)=>{const w=o.w[0]+o.w[1]+o.w[2];put(ws,10,2+x*2,w,{b:1,k:BL,n:NUM});put(ws,10,3+x*2,P(w,sm(o)),{b:1,k:BL,n:PCT})});
+ const w1=tot[0]+tot[1]+tot[2];put(ws,10,c,w1,{b:1,k:BL,n:NUM});put(ws,10,c+1,P(w1,tt),{b:1,k:BL,n:PCT});
+ frame(ws,1,1,9,nc);frame(ws,10,1,10,c+1);[[1,1,3,nc],[1,1,9,nc],[9,1,9,nc],[10,1,10,c+1]].forEach(a=>edge(ws,...a));
+ // ---- save
+ const buf=await wb.xlsx.writeBuffer(),fn="Care_Connect_Reports.xlsx";
+ try{const d=await claude.use("downloads");if(!d)throw 0;await d.save({filename:fn,data:buf});return}catch(e){if(e&&e.code==="declined")return}
+ const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));a.download=fn;document.body.append(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);
+ }catch(e){$("msg").innerHTML='<span class=er>Could not build Excel: '+e.message+'</span>'}};
 let FA=null,FB=null;
 function cu(el,to,f=n){const a=el._v||0,t0=performance.now();el._v=to;(function s(t){const k=Math.min(1,(t-t0)/800),e=1-Math.pow(1-k,3);el.textContent=f(a+(to-a)*e);if(k<1)requestAnimationFrame(s)})(t0)}
 function toast(t){const e=document.createElement("div");e.className="toast";e.textContent=t;document.body.append(e);setTimeout(()=>e.remove(),3300)}
@@ -213,8 +246,13 @@ function viz(M,tot,tt){
  P.forEach(([nm,k],i)=>{const f=cs?c[k]/cs:0,L=f*377,v=n(c[k])+" · "+Math.round(f*100)+"%";d+=`<circle class=seg cx=80 cy=80 r=60 fill=none stroke-width=22 stroke="var(--c${i})" stroke-dasharray="${L} ${377-L}" stroke-dashoffset=${-off} data-n="${nm}" data-v="${v}" data-t="${nm}: ${v}" style="--d:${i*130}ms"/>`;off+=L});
  $("dd").innerHTML=d+`</g></svg><div class=dc><b id=dn>${n(cs)}</b><small id=dl>complaints 2026</small></div></div><div class=dl>`+P.map((p,i)=>`<span><i style="background:var(--c${i})"></i>${p[0]}</span>`).join("")+"</div>";
 }
-$("lg").onclick=()=>{if(ses)saveSes(null);else $("lf").hidden=!$("lf").hidden};
-$("si").onclick=async()=>{$("le").textContent="";try{await auth({email:$("em").value.trim(),password:$("pw").value},"password");$("pw").value="";$("lf").hidden=true;toast("✓ Signed in");load()}catch(e){$("le").textContent=e.message}};
-$("pw").onkeydown=e=>{if(e.key==="Enter")$("si").click()};
-days=lsGet();updAuth();render();load();setInterval(load,60000);addEventListener("focus",load);
+days=lsGet();render();
+(async()=>{
+ const loc=()=>{$("st").textContent="Saved in this browser – days load automatically."};
+ try{const db=await claude.use("db");if(!db){loc();return}
+  col=db.collection("days");$("st").textContent="Storage connected – saved days load automatically.";let first=true;
+  col.onSnapshot(s=>{const d={};s.docs.forEach(x=>d[x.id]=x.data());
+   if(first&&!s.docs.length){const l=lsGet();for(const id in l){d[id]=l[id];col.doc(id).set(l[id]).catch(()=>{})}}
+   first=false;days=d;lsSet();render()},e=>{col=null;loc()})}
+ catch(e){loc()}})();
 </script></body></html>
